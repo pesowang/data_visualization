@@ -1147,6 +1147,7 @@
             .selectAll("legend")
             .data(valuesToShow)
             .join("text")
+            .attr("class", "legend-label")
             .attr('x', xLabel)
             .attr('y', d => - z(d) + 70)
             .text(d => d)
