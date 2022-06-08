@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document</title>
+  <!-- CSS only -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-wEmeIV1mKuiNpC+IOBjI7aAzPcEZeedi5yW5f2yOq55WWLwNGmvvx4Um1vskeMj0" crossorigin="anonymous">
+
+  <script src="https://d3js.org/queue.v1.min.js"></script>
+  <script src="https://d3js.org/topojson.v1.min.js"></script>
+
+
+  <style>
+    div.tooltips {
+      position: absolute;
+      text-align: center;
+      width: 150px;
+      height: 100px;
+      padding: 2px;
+      font: 25px sans-serif;
+      color: azure;
+      background: lightsteelblue;
+      border: 0px;
+      border-radius: 8px;
+      pointer-events: none;
+    }
+
+    div.tooltip {
+      position: absolute;
+      text-align: center;
+      width: 150px;
+
+      padding: 2px;
+      font: 25px sans-serif;
+      color: azure;
+
+      border: 0px;
+      border-radius: 8px;
+      pointer-events: none;
+    }
+
+    #my_dataviz {
+      fill-opacity: "0.5";
+      outline: thin solid gray;
+      stroke: "blue";
+      width: 1200px;
+
+      stroke-opacity: "0.8";
+    }
+
+    #test-menu {
+      height: 60vh;
+      overflow: scroll;
+    }
+
+    a {
+      font-size: 10px;
+    }
+
+
+
+    ol {
+      display: none;
+    }
+
+    .bubbles {
+      stroke-width: 1px;
+      /* stroke: black; */
+      opacity: .8
+    }
+
+    .bubbles:hover {
+      stroke: black;
+    }
+
+    body {
+      margin: 0;
+      height: 100%
+    }
+
+    html {
+      height: 100%
+    }
+
+    /*兼容firefox的div高度100%*/
+    .left {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 200px;
+      height: 70%;
+      margin-left: 20px;
+    }
+
+    .right {
+      margin-left: 80%;
+      height: 70%;
+    }
+
+    .barchart {
+      border-style: dotted;
+      border-width: 2px;
+      margin-left: 1%;
+      width: 60%;
+      height: 30%;
+    }
+
+    div#halfpage {
+      height: 300px;
+      width: 220px;
+      border: 1px #000;
+      overflow-y: auto;
+      margin-left: 90px;
+    }
+
+    svg#sky {
+      height: 620px;
+      width: 220px;
+      border: 1px dotted #ccc;
+      /* background-color: rgb(223, 240, 255); */
+    }
+
+    #my_dataviz {
+      width: 1200px;
+      height: 60%;
+
+      margin-top: 20px;
+    }
+
+    #legend {
+      width: 60%;
+      height: 60%;
+      padding-right: 50px;
+      margin-top: 20px;
+      margin-bottom: 10px;
+    }
+
+    #bar {
+
+      display: column;
+      width: 95%;
+    }
+  </style>
+
+<body>
+
+  <div style="width: 2200px;height: 1200px;display:flex ">
+    <main style="width: 1400px  ">
+
+      <div class="left" id="my_dataviz"></div>
+      <div class="right" id="legend"></div>
+      <div class="barchart" id="bar"></div>
+
+    </main>
+
+    <aside
+      style="display:flex;justify-content:flex-start;align-items:flex-start;width: 400px;height:80%;margin-top:20px ">
+
+      <div class="shadow-sm p-3 mb-5 bg-white rounded">
+        <h3 style="text-align:center">
+          Total amount of box office
+        </h3>
+        <form style="width: 400px;">
+          <div data-role="rangeslider" style="font-size: 10px;">
+            <label for="range-10a">YEAR:</label>
+            <input type="range" name="range-3a" id="minyear" min="1931" max="2026" value="1931"
+              data-popup-enabled="true" data-show-value="true" style="font-size:10px">
+            <label for="range-10b">YEAR:</label>
+            <input type="range" name="range-3b" id="maxyear" min="1931" max="2026" value="2026"
+              data-popup-enabled="true" data-show-value="true" style="font-size:10px">
+          </div>
+        </form>
+
+        <form style="width: 400px;">
+          <div data-role="rangeslider">
+            <label for="range-10a">SIZE:</label>
+            <input type="range" name="range-10a" id="minsize" min="1" max="20" value="1" data-popup-enabled="true"
+              data-show-value="true">
+            <label for="range-10b">SIZE:</label>
+            <input type="range" name="range-10b" id="maxsize" min="1" max="20" value="20" data-popup-enabled="true"
+              data-show-value="true">
+          </div>
+        </form>
+        <form style="width: 400px;">
+          <div data-role="rangeslider">
+            <label for="range-1a">MOVIES BOX OFFICE:</label>
+            <input type="range" name="range-1a" id="minoffice" min="5000" max="950000000000" value="5000"
+              data-popup-enabled="true" data-show-value="true">
+            <label for="range-1b">MOVIES BOX OFFICE:</label>
+            <input type="range" name="range-1b" id="maxoffice" min="5000" max="950000000000" value="950000000000"
+              data-popup-enabled="true" data-show-value="true">
+          </div>
+        </form>
+
+        <div data-role="main" class="ui-content">
+
+
+          <div style="display:flex ;">
+            <div data-role="ui-field-contain" style="width: 300px;">
+              <select id="test" multiple="multiple" data-native-menu="false">
+
+                <option value="United States of America  ">United States</option>
+                <option value="China project">China</option>
+                <option value="Australia">Australia</option>
+                <option value="United Kingdom">United Kingdom</option>
+                <option value="South Korea">South Korea</option>
+                <option value="France">France</option>
+                <option value="New Zealand">New Zealand</option>
+                <option value="Hungary">Hungary</option>
+                <option value="Canada">Canada</option>
+                <option value="Sweden">Sweden</option>
+                <option value="Russia">Russia</option>
+                <option value="Ethiopia">Ethiopia</option>
+                <option value="Chile">Chile</option>
+                <option value="Japan">Japan</option>
+                <option value="Spain">Spain</option>
+                <option value="Germany">Germany</option>
+                <option value="Iran">Iran</option>
+                <option value="Ireland">Ireland</option>
+                <option value="Italy">Italy</option>
+                <option value="Brazil">Brazil</option>
+                <option value="India">India</option>
+                <option value="Mexico">Mexico</option>
+                <option value="Hong Kong">Hong Kong</option>
+                <option value="Mexico">Turkey</option>
+              </select>
+
+            </div>
+            <button type="button" id="btns0"
+              style="margin-left:5px;color:white;background-color: rgb(24, 180, 236);width:100px;">ADD</button>
+          </div>
+
+
+          <div style="display:flex ;">
+
+            <div>
+              <svg id="my_dataviz0" width="230" height="250"></svg>
+            </div>
+            <div style="margin-left:20px;height: 260px;">
+              <ol class="contains" style="height: 190px;overflow:scroll">
+
+              </ol>
+              <button type="button" id="clear"
+                style="color:white;background-color: rgb(24, 180, 236);width:100px;display:none">Clear</button>
+            </div>
+          </div>
+
+          <input id="myInput" type="text" placeholder="Search..">
+          <div style="display:flex;align-items:center">
+            <span id="coun" style="margin-left: 10px;margin-right: 10px;display:none"> </span>
+            <button type="button" id="btns"
+              style="color:white;background-color: rgb(24, 180, 236);width:100px;display:none">ADD</button>
+          </div>
+
+
+        </div>
+
+        <button type="button" id="myBtn" class="btn btn-primary" data-toggle="modal" data-target="#myModal"
+          style="color:white;background-color: rgb(24, 180, 236);">Search</button>
+    </aside>
+
+  </div>
+
+
+
+</html>
+
+<script src="https://demos.jquerymobile.com/1.4.2/js/jquery.js"></script>
+
+<link rel="stylesheet" href="https://demos.jquerymobile.com/1.4.2/css/themes/default/jquery.mobile-1.4.2.min.css">
+<script src="https://demos.jquerymobile.com/1.4.2/js/jquery.mobile-1.4.2.min.js"></script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-zoom@3"></script>
+<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+<script src="https://d3js.org/d3.v6.js"></script>
+
+<script>
+  $(document).ready(function () {
+
+    $("#minyear").hide()
+    $("#maxyear").hide()
+    $("#minsize").hide()
+    $("#maxsize").hide()
+    $("#minoffice").hide()
+    $("#maxoffice").hide()
+    // The svg
+    var svgs = d3.select("#my_dataviz0"),
+      width = +svgs.attr("width"),
+      height = +svgs.attr("height");
+
+    // Map and projection
+    const path = d3.geoPath();
+    const projection = d3.geoMercator()
+      .scale(70)
+      .center([0, 20])
+      .translate([width / 2, height / 2]);
+
+    // Data and color scale
+    let data = new Map()
+    const colorScale = d3.scaleThreshold()
+      .domain([100000, 1000000, 10000000, 30000000, 100000000, 500000000])
+      .range(d3.schemeDark2);
+
+    // Load external data and boot
+    Promise.all([
+      d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson"),
+      d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world_population.csv"), d3.csv("train-0528.csv")
+    ]).then(function (loadData) {
+      let topo = loadData[0]
+
+      var load3 = loadData[1].filter((d, i) => {
+        if (loadData[2].map(d => d.production_countries).includes(d.name)) {
+
+          return loadData[2].map(d => d.production_countries).includes(d.name)
+        }
+      })
+      console.log(load3)
+      load3.forEach((d, i) => {
+
+        data.set(d.code, +d.pop)
+
+      })
+
+
+
+      let mouseOver = function (d) {
+
+        var tooltipDiv = d3.select("aside").append("div")
+          .attr("class", "tooltip")
+        console.log(d3.select(".tooltip"))
+        tooltipDiv.transition()
+          .duration(200)
+          .style("opacity", .9);
+        tooltipDiv.html(this.__data__.properties.name)
+          .style("left", (d.pageX) + "px")
+          .style("top", (d.pageY - 28) + "px")
+          .style("background", d.target.attributes.fill.value)
+        d3.selectAll(".Country")
+          .transition()
+          .duration(200)
+          .style("opacity", .5)
+        d3.select(this)
+          .transition()
+          .duration(200)
+          .style("opacity", 1)
+          .style("stroke", "black")
+      }
+      let mouseLeave = function (d) {
+
+
+        d3.select(".tooltip").remove()
+
+        d3.selectAll(".Country")
+          .transition()
+          .duration(200)
+          .style("opacity", .8)
+          .style("stroke", "#fff")
+        d3.select(this)
+          .transition()
+          .duration(200)
+          .style("stroke", "#fff")
+      }
+
+      // Draw the map
+      svgs.append("g")
+        .selectAll("path")
+        .data(topo.features)
+        .join("path")
+        // draw each country
+        .attr("d", d3.geoPath()
+          .projection(projection)
+        )
+        // set the color of each country
+        .attr("fill", function (d) {
+          //console.log(data)
+          //d.total = data.get(d.id) || 0;
+          // return colorScale(d.total);
+          if (d.id == "AUS") {
+            return "a8e6cf"
+          } else if (d.id == "BRA") {
+            return "#dcedc1"
+          } else if (d.id == "CAN") {
+            return "#ffd3b6"
+          } else if (d.id == "CHL") {
+            return "#ffaaa5"
+          } else if (d.id == "CHN") {
+            return "#ff8b94"
+          } else if (d.id == "ETH") {
+            return "#ac767c"
+          }
+          else if (d.id == "FRA") {
+            return "#eba642"
+          }
+          else if (d.id == "DEU") {
+            return "#6094a6"
+          }
+          else if (d.id == "HKG") {
+            return "#5ca24d"
+          }
+          else if (d.id == "HUN") {
+            return "#b2b1aa"
+          }
+          else if (d.id == "IND") {
+            return "#74bcb3"
+          }
+          else if (d.id == "IRN") {
+            return "#F9DBBD"
+          } else if (d.id == "IRL") {
+            return "#a9bedc"
+          } else if (d.id == "Italy") {
+            return "#a62e58"
+          } else if (d.id == "JPN") {
+            return "#287586"
+          } else if (d.id == "MEX") {
+            return "#e8cc8e"
+          } else if (d.id == "NZL") {
+            return "#d66e19"
+          } else if (d.id == "RUS") {
+            return "#33a42c"
+          } else if (d.id == "KOR") {
+            return "#867397"
+          } else if (d.id == "ESP") {
+            return "#f9b95d"
+          } else if (d.id == "SWE") {
+            return "#9f6bb6"
+          } else if (d.id == "TUR") {
+            return "#beba2d"
+          } else if (d.id == "GBR") {
+            return "#927976"
+          } else if (d.id == "USA") {
+            return "#E9758F"
+          } else {
+            return "gray"
+          }
+
+        })
+        .style("stroke", "transparent")
+        .attr("class", function (d) { return "Country" })
+        .style("opacity", .8)
+        .style("stroke", "#fff")
+
+        .on("mouseover", mouseOver)
+        .on("mouseleave", mouseLeave)
+
+      var topo3 = loadData[2]
+      topo3.forEach((t, q) => {
+        t.Total = +t.Total
+        t.revenue_new = +t.revenue_new
+        t.release_date = +t.release_date
+      })
+      console.log(d3.max(topo3, d => d.Total))
+
+      var max = d3.max(topo3, d => d.release_date)
+      var min = d3.min(topo3, d => d.release_date)
+      var arr = []
+      topo3.forEach(d => {
+
+        arr.push(d.production_countries)
+      })
+      topo3.forEach(d => {
+
+        d.Total = +d.Total
+      })
+      var uniqueArr = [...new Set(arr)]
+
+
+      $("#myInput").bind('input porpertychange', (d, i) => {
+        var inputs = $("#myInput").val()
+        var ars = uniqueArr.filter(word => word == inputs)
+
+        if (ars && ars != "") {
+          $("#coun").text(uniqueArr.filter(word => word == inputs)[0])
+          $("#coun").show()
+          $("#btns").show()
+        } else {
+
+          $("#coun").hide()
+          $("#btns").hide()
+        }
+
+      });
+
+      $("#btns").click((d, i) => {
+
+        console.log($('#test').children())
+        $("#clear").show()
+        $("ol").show()
+
+
+        if ($(".contains").children.length > 0) {
+          uniq = [...new Set(Array.from($(".contains").children()).map(d => d.textContent))];
+
+          if (!uniq.includes($("#coun").text())) {
+            $(".contains").append("<li>" + $("#coun").text() + "</li>")
+          }
+
+        }
+
+
+
+
+
+
+
+
+
+      })
+
+
+      $("#clear").click((d, i) => {
+        $("ol").hide()
+        $("#clear").hide()
+
+        //  console.log(  $("#test option:selected") )
+
+        $('#test').val('').change();
+        $('#test-listbox ul li a').removeClass('ui-checkbox-on');
+        $('#test-listbox ul li a').addClass('ui-checkbox-off');
+
+        Array.from($("#test-button>span"))[0].innerHTML = "<span>&nbsp&nbsp&nbsp&nbsp&nbsp</span>"
+        if (Array.from($("#test-button>span"))[1]) {
+          Array.from($("#test-button>span"))[1].className = ""
+          Array.from($("#test-button>span"))[1].textContent = ""
+        }
+
+
+        console.log($(".contains").children().remove())
+      })
+
+
+      $("#btns0").click((d, i) => {
+        console.log($(".ui-select>a>span")[0].textContent)
+        $(".ui-select>a>span")[0].textContent.split(",").forEach((d, i) => {
+
+
+          if ($(".contains").children.length != 0) {
+            uniq = [...new Set(Array.from($(".contains").children()).map(d => d.textContent))];
+
+            if (!uniq.includes(d)) {
+
+              if (d.trim() != "") {
+                $(".contains").append("<li>" + d + "</li>")
+                $("#clear").show()
+                $("ol").show()
+              }
+
+            }
+
+
+
+          }
+        })
+
+      })
+
+
+
+
+      var count = 0
+      function drawCanvas(data) {
+
+        // set the dimensions and margins of the graph
+
+        const margin = { top: 40, right: 150, bottom: 60, left: 30 },
+          width = 1200 - margin.left - margin.right,
+          height = 700 - margin.top - margin.bottom;
+
+
+        // append the svg object to the body of the page
+
+        d3.select("#scatterplot").remove()
+
+        d3.select(".tooltip").remove()
+        d3.select("#lagendsvg").remove()
+        d3.select("#barsvg").remove()
+        d3.select("#selectdiv").remove()
+        d3.select("#halfpage").remove()
+
+
+        var svg = d3
+          .select("#my_dataviz")
+          .append("svg")
+          .attr("id", "scatterplot")
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom)
+          .append("g")
+          .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // set the dimensions and margins of the graph
+        const margin2 = { top: 40, right: 150, bottom: 60, left: 30 },
+          width2 = 700 - margin.left - margin.right,
+          height2 = 250 - margin.top - margin.bottom;
+
+        // append the svg object to the body of the page
+        var svg2 = d3
+          .select("#legend")
+          .append("svg")
+          .attr("id", "lagendsvg")
+          .attr("width", width2 + margin2.left + margin2.right)
+          .attr("height", height2 + margin2.top + margin2.bottom)
+          .append("g")
+          .attr("transform", `translate(${margin2.left},${margin2.top + 100})`);
+
+
+
+
+
+
+
+        //Read the data
+
+        // ---------------------------//
+        //       AXIS  AND SCALE      //
+        // ---------------------------//
+
+        var formatComma = d3.format(",");
+
+        // Add X axis
+        const x = d3
+          .scaleLinear()
+          .domain([0, d3.max(data.map((d) => +d["revenue_new"]))])
+          .range([0, width]);
+
+        const x2 = d3
+          .scaleLinear()
+          .domain([0, d3.max(data.map((d) => +d.Total))])
+          .range([0, width]);
+
+        const xAxis = svg
+          .append("g")
+          .attr("transform", `translate(20, ${height})`)
+
+
+          .call(
+            d3.axisBottom(x).tickFormat(function (tickVal) {
+              // Known issue : 除法太慢了
+              if (tickVal >= 1000000) {
+                // tickVal = tickVal / 1000000;
+                tickVal = tickVal * 0.00000001;
+                tickVal = formatComma(tickVal) + "M";
+              } else {
+                tickVal = formatComma(tickVal);
+              }
+              return tickVal;
+            })
+          );
+
+        // Add X axis label:
+        svg
+          .append("g")
+          .attr("transform", `translate(30,0)`)
+          .append("text")
+
+          .attr("text-anchor", "end")
+          .attr("x", width + 20)
+          .attr("y", height + 50)
+          .text("Total amount of box offices year");
+
+        // Add Y axis
+        const y = d3
+          .scaleBand()
+          .domain(data.map((d) => d.release_date))
+          .range([height, 0]);
+
+        // Add second Y axis
+        const y2 = d3
+          .scaleBand()
+          .domain(["2018", "2019", "2020", "2021", "2022"])
+          .range([height, 0]);
+
+        const yAxis = svg.append("g")
+          .attr("transform", `translate(20,0)`)
+          .transition()
+          .duration(1000)
+          .call(d3.axisLeft(y));
+
+        // Add Y axis label:
+        svg
+          .append("text")
+          .attr("text-anchor", "end")
+          .attr("x", 0)
+          .attr("y", -20)
+          .text("Year")
+          .attr("text-anchor", "start");
+
+        // Add a scale for bubble size
+        const z = d3
+          .scaleSqrt()
+          .domain([0, d3.max(data.map((d) => d.Total))])
+          .range([1, 20]);
+
+        // Add a scale for bubble size
+        const z2 = d3
+          .scaleSqrt()
+          .domain([0, d3.max(data.map((d) => +d["revenue_new"]))])
+          .range([1, 20]);
+
+        const countries = [
+          { key: "Australia", country: "Australia" },
+          { key: "Brazil", country: "Brazil" },
+          { key: "Canada", country: "Canada" },
+          { key: "Chile", country: "Chile" },
+          { key: "China", country: "China" },
+          { key: "Ethiopia", country: "Ethiopia" },
+          { key: "France", country: "France" },
+          { key: "Germany", country: "Germany" },
+          { key: "Hong-Kong", country: "Hong Kong" },
+          { key: "Hungary", country: "Hungary" },
+          { key: "India", country: "India" },
+          { key: "Iran", country: "Iran" },
+          { key: "Ireland", country: "Ireland" },
+          { key: "Italy", country: "Italy" },
+          { key: "Japan", country: "Japan" },
+          { key: "Mexico", country: "Mexico" },
+          { key: "New-Zealand", country: "New Zealand" },
+          { key: "Russia", country: "Russia" },
+          { key: "South-Korea", country: "South Korea" },
+          { key: "Spain", country: "Spain" },
+          { key: "Sweden", country: "Sweden" },
+          { key: "Turkey", country: "Turkey" },
+          { key: "United-Kingdom", country: "United Kingdom" },
+          { key: "United-States", country: "United States" },
+        ];
+
+        const colors = [
+          "#a8e6cf",
+          "#dcedc1",
+          "#ffd3b6",
+          "#ffaaa5",
+          "#ff8b94",
+          "#ac767c",
+          "#eba642",
+          "#6094a6",
+          "#5ca24d",
+          "#b2b1aa",
+          "#74bcb3",
+          "#F9DBBD",
+          "#a9bedc",
+          "#a62e58",
+          "#287586",
+          "#e8cc8e",
+          "#d66e19",
+          "#33a42c",
+          "#867397",
+          "#f9b95d",
+          "#9f6bb6",
+          "#beba2d",
+          "#927976",
+          "#E9758F",
+        ];
+        // Add a scale for bubble color
+        const myColor = d3
+          .scaleOrdinal()
+          .domain(countries.map((d) => d.country))
+          .range(colors);
+
+        // ---------------------------//
+        //      TOOLTIP               //
+        // ---------------------------//
+
+        // -1- Create a tooltip div that is hidden by default:
+        const tooltip = d3
+          .select("#my_dataviz")
+          .append("div")
+          .style("width", "180px")
+          .style("opacity", 0)
+          .attr("class", "tooltips")
+          .style("background-color", "white")
+          .style("border-style", "solid")
+          .style("border-width", "1px")
+          .style("border-radius", "5px")
+          .style("padding", "10px")
+          .style("color", "black")
+          .style("position", "absolute")
+          .style("font", "12px sans-serif");
+
+        // -2- Create 3 functions to show / update (when mouse move but stay on same circle) / hide the tooltip
+        const showTooltip = function (event, d) {
+          console.log(d)
+          tooltip
+            .style("opacity", 1)
+            .style("width", "180px")
+            .html(
+              "Year: " +
+              d.release_date +
+              "<br/>" +
+              "Country:" +
+              d.production_countries +
+              "<br/>" +
+              "Box Office: " +
+              +d["revenue_new"]
+            )
+            .style("left", event.x + 5 + "px")
+            .style("top", event.y - 3 + "px");
+        };
+        const moveTooltip = function (event, d) {
+          tooltip
+            .style("left", event.x + 5 + "px")
+            .style("top", event.y - 3 + "px");
+        };
+        const hideTooltip = function (event, d) {
+          // Known issue
+          tooltip
+            .style("width", "0px")
+            .html("")
+            .style("left", event.x + 150 + "px")
+            .style("top", event.y + 150 + "px")
+            .style("opacity", 0);
+        };
+
+        // ---------------------------//
+        //       HIGHLIGHT GROUP      //
+        // ---------------------------//
+
+        // What to do when one group is hovered
+        const highlight = function (event, d) {
+          // reduce opacity of all groups
+          console.log(d);
+          d3.selectAll("#scatterplot .bubbles")
+            .transition()
+            .duration(200)
+            .style("opacity", 0.005);
+          // expect the one that is hovered
+          d3.selectAll("." + d.key)
+            .transition()
+            .duration(200)
+            .style("opacity", 0.8);
+        };
+
+        // And when it is not hovered anymore
+        const noHighlight = function (event, d) {
+          d3.selectAll("#scatterplot .bubbles")
+            .transition()
+            .duration(200)
+            .style("opacity", 0.8);
+        };
+
+        // ---------------------------//
+        //       UPDATE BARCHART      //
+        // ---------------------------//
+
+        // What to do when one circle clicked
+        const updateBar = function (event, dp) {
+          const data_fil = [
+            { genre: "Music", amount: dp.Music },
+            { genre: "Romance", amount: dp.Romance },
+            { genre: "War", amount: dp.War },
+            { genre: "Adventure", amount: dp.Adventure },
+            { genre: "Animation", amount: dp.Animation },
+            { genre: "Drama", amount: dp.Drama },
+            { genre: "Horror", amount: dp.Horror },
+            { genre: "Action", amount: dp.Action },
+            { genre: "Comedy", amount: dp.Comedy },
+            { genre: "Western", amount: dp.Western },
+            { genre: "Thriller", amount: dp.Thriller },
+            { genre: "Science Fiction", amount: dp["Science Fiction"] },
+            { genre: "Mystery", amount: dp.Mystery },
+            { genre: "Documentary", amount: dp.Documentary },
+          ];
+
+          // console.log(dp.release_date);
+          // console.log(dp.production_countries);
+          console.log(dp);
+          bars
+            .data(data_fil)
+            .join("rect")
+            .attr("class", "bars")
+            .transition()
+            .duration(500)
+            .attr("x", (d) => x3(d.genre))
+            .attr("y", (d) => y3(d.amount))
+            .attr("width", x3.bandwidth())
+            .attr("height", (d) => height3 - y3(d.amount))
+            .attr("fill", (d) => blues(d.amount));
+
+          d3.select(this)
+            .transition()
+            .duration('100')
+            .attr("stroke", "black");
+
+        };
+
+        // ---------------------------//
+        //       CIRCLES              //
+        // ---------------------------//
+
+        // Add dots
+        var scatter = svg
+          .append("g")
+          .selectAll("dot")
+          .data(data)
+          .join("circle")
+          .attr("class", function (d) {
+            return "bubbles " + d.production_countries.replaceAll(" ", "-");
+          })
+          .attr("cx", (d) => {
+            console.log(x(+d["revenue_new"]))
+            return x(+d["revenue_new"]) + 20
+          })
+          .attr("cy", (d) => y(d.release_date))
+          .attr("r", (d) => z(d.Total))
+          .style("fill", (d) => myColor(d.production_countries))
+          // -3- Trigger the functions for hover
+          .on("mouseover", showTooltip)
+          .on("mousemove", moveTooltip)
+          .on("mouseleave", hideTooltip)
+          .on("click", updateBar)
+
+
+        // ---------------------------//
+        //       LEGEND              //
+        // ---------------------------//
+
+        // Add legend: circles
+        var valuesToShow = [1, 10, 20];
+        var xCircle = 120;
+        var xLabel = 180;
+        svg2
+          .selectAll("legend")
+          .data(valuesToShow)
+          .join("circle")
+
+          .attr("class", "legend-circle")
+          .attr("cx", xCircle)
+          .attr("cy", (d) => -z(d) + 70)
+          .attr("r", (d) => z(d))
+          .style("fill", "none")
+          .attr("stroke", "black");
+
+        // Add legend: segments
+        svg2
+          .selectAll("legend")
+          .data(valuesToShow)
+          .join("line")
+          .attr("class", "legend-segment")
+          .attr("x1", (d) => xCircle + z(d))
+          .attr("x2", xLabel)
+          .attr("y1", (d) => -z(d) + 70)
+          .attr("y2", (d) => -z(d) + 70)
+          .attr("stroke", "black")
+          .style("stroke-dasharray", "2,2");
+
+        // Add legend: labels
+        svg2
+          .selectAll("legend")
+          .data(valuesToShow)
+          .join("text")
+          .attr("class", "legend-label")
+          .attr("x", xLabel)
+          .attr("y", (d) => -z(d) + 70)
+          .text((d) => d)
+          .style("font-size", 10)
+          .attr("alignment-baseline", "middle");
+
+        // Legend title
+        svg2
+          .append("text")
+          .attr("class", "legend-title")
+          .attr("x", xCircle)
+          .attr("y", 100)
+          .text("# of Movies")
+          .attr("text-anchor", "middle");
+
+        const container = d3.select("#legend").append("div").attr("id", "halfpage");
+
+        const svg3 = container
+          .append("svg")
+          //.attr('height', 100)
+          //.attr('width', 100)
+          .attr("id", "sky");
+
+        // Add one dot in the legend for each name.
+        const size = 20;
+        //const allgroups = ["Asia", "Europe", "Americas", "Africa", "Oceania"]
+        svg3
+          .selectAll("myrect")
+          .data(countries)
+          .join("circle")
+          .attr("cx", 20)
+          .attr("cy", (d, i) => 20 + i * (size + 5)) // 100 is where the first dot appears. 25 is the distance between dots
+          .attr("r", 7)
+          .style("fill", (d) => myColor(d.country))
+          .on("mouseover", highlight)
+          .on("mouseleave", noHighlight);
+
+        // Add labels beside legend dots
+        svg3
+          .selectAll("mylabels")
+          .data(countries)
+          .enter()
+          .append("text")
+          .attr("x", 20 + size * 0.8)
+          .attr("y", (d, i) => i * (size + 5) + size / 2 + 15) // 100 is where the first dot appears. 25 is the distance between dots
+          .style("fill", (d) => myColor(d.country))
+          .text((d) => d.country)
+          .attr("text-anchor", "left")
+          .style("alignment-baseline", "middle")
+          .style("display", "inline")
+          .on("mouseover", highlight)
+          .on("mouseleave", noHighlight);
+
+        // List of groups (here I have one group per column)
+        const allGroup = ["Box Office", "# of Movies"];
+
+        // add the options to the button
+        d3.select("#bar")
+          .append("div")
+          .attr("id", "selectdiv")
+          .append("select")
+          .attr("id", "selectButton")
+          .selectAll("myOptions")
+          .data(allGroup)
+          .enter()
+          .append("option")
+          .text(function (d) {
+            return d;
+          }) // text showed in the menu
+          .attr("value", function (d) {
+            return d;
+          }); // corresponding value returned by the button
+
+        // A function that update the chart
+        function update(selectedGroup) {
+          if (selectedGroup == "# of Movies") {
+            console.log("Movies!");
+            console.log(xAxis);
+            // update axis
+            xAxis.transition().duration(1000).call(d3.axisBottom(x2));
+
+            // update dots
+            scatter
+              .transition()
+              .duration(1000)
+              .attr("cx", function (d) {
+                return x2(d.Total);
+              })
+              .attr("cy", function (d) {
+                return y(d.release_date);
+              })
+              .attr("r", function (d) {
+                return z2(+d["revenue_new"]);
+              })
+              .style("fill", (d) => myColor(d.production_countries));
+
+            // update legend title
+            d3.selectAll(".legend-title")
+              .text("# of Box offices");
+
+            valuesToShow = ["1M", "4,500M", "9,000M"]
+
+            // update legend labels
+            d3.selectAll(".legend-label")
+              .data(valuesToShow)
+              .text((d) => d)
+
+          } else {
+            // update axis
+            xAxis
+              .transition()
+              .duration(600)
+              .call(
+                d3.axisBottom(x).tickFormat(function (tickVal) {
+                  if (tickVal >= 1000000) {
+                    // tickVal = tickVal / 1000000;
+                    tickVal = tickVal * 0.0000001;
+                    tickVal = formatComma(tickVal) + "M";
+                  } else {
+                    tickVal = formatComma(tickVal);
+                  }
+                  return tickVal;
+                })
+              );
+
+            // update dots
+            scatter
+              .transition()
+              .duration(600)
+              .attr("cx", (d) => x(+d["revenue_new"]) + 20)
+              .attr("cy", (d) => y(d.release_date))
+              .attr("r", (d) => z(d.Total))
+              .style("fill", (d) => myColor(d.production_countries));
+
+            // update legend title
+            d3.selectAll(".legend-title")
+              .text("# of Movies");
+
+            valuesToShow = ["1", "10", "20"]
+
+            // update legend labels
+            d3.selectAll(".legend-label")
+              .data(valuesToShow)
+              .text((d) => d)
+          }
+        }
+
+        // When the button is changed, run the updateChart function
+        d3.select("#selectButton").on("change", function (event, d) {
+          // recover the option that has been chosen
+          const selectedOption = d3.select(this).property("value");
+          // run the updateChart function with this selected option
+          update(selectedOption);
+        });
+
+        // ---------------------------//
+        //       BAR CHART            //
+        // ---------------------------//
+
+        const width3 = 800 - margin.left - margin.right,
+          height3 = 300 - margin.top - margin.bottom;
+
+        const bar_svg = d3
+          .select("#bar")
+          .append("svg")
+          .attr("id", "barsvg")
+          .attr("width", width3 + margin.left + margin.right)
+          .attr("height", height3 + margin.top + margin.bottom)
+          .append("g")
+
+          .attr("transform", `translate(70,25)`);
+
+        var dp;
+
+        data.map(function (d) {
+          console.log(d)
+          console.log(d)
+          console.log(d)
+          if (
+            d.production_countries == "United States" &&
+            d.release_date == 2010
+          ) {
+            dp = d;
+          } else {
+            dp = d
+          }
+        });
+
+        const obj = [
+          { genre: "Music", amount: dp.Music },
+          { genre: "Romance", amount: dp.Romance },
+          { genre: "War", amount: dp.War },
+          { genre: "Adventure", amount: dp.Adventure },
+          { genre: "Animation", amount: dp.Animation },
+          { genre: "Drama", amount: dp.Drama },
+          { genre: "Horror", amount: dp.Horror },
+          { genre: "Action", amount: dp.Action },
+          { genre: "Comedy", amount: dp.Comedy },
+          { genre: "Western", amount: dp.Western },
+          { genre: "Thriller", amount: dp.Thriller },
+          { genre: "Science Fiction", amount: dp["Science Fiction"] },
+          { genre: "Mystery", amount: dp.Mystery },
+          { genre: "Documentary", amount: dp.Documentary },
+        ];
+        console.log(obj);
+
+        // X axis
+        const x3 = d3
+          .scaleBand()
+          .range([0, width3])
+          .domain(obj.map((d) => d.genre))
+          .padding(0.2);
+        bar_svg
+          .append("g")
+          .attr("transform", `translate(0, ${height3})`)
+          .call(d3.axisBottom(x3))
+          .selectAll("text")
+          .attr("transform", "translate(-10,0)rotate(-45)")
+          .style("text-anchor", "end");
+
+        // Add X axis label:
+        bar_svg
+          .append("text")
+          .attr("text-anchor", "end")
+          .attr("x", width3 + 60)
+          .attr("y", height3 + 10)
+          .text("Genres");
+
+        const blues = d3
+          .scaleSequential()
+          .domain([-5, 12])
+          .interpolator(d3.interpolateBlues);
+
+        // Add Y axis label:
+        bar_svg
+          .append("text")
+          .attr("text-anchor", "end")
+          .attr("x", -160)
+          .attr("y", -30)
+          .text("# of movies")
+          .attr("transform", "rotate(-90)")
+          .attr("text-anchor", "start");
+
+        // Add Y axis
+        const y3 = d3.scaleLinear().domain([0, 10]).range([height3, 0]);
+
+        bar_svg
+          .append("g")
+          // .attr("transform", `translate(20, ${height})`)
+          .call(d3.axisLeft(y3));
+
+        // Add Country label:
+        var country_label = bar_svg
+          .append("text")
+          .attr("x", width3 - 170)
+          .attr("y", 10)
+          .style("border", "1px")
+          .text("Country : " + dp.production_countries);
+
+        // Bars
+        var bars = bar_svg
+          .selectAll("mybar")
+          .data(obj)
+          .join("rect")
+          .attr("class", "bars")
+          .attr("x", (d) => x3(d.genre))
+          .attr("y", (d) => y3(d.amount))
+          .attr("width", x3.bandwidth())
+          .attr("height", (d) => height3 - y3(d.amount))
+          .attr("fill", (d) => blues(d.amount));
+
+
+
+        console.log(bars)
+        console.log(bars)
+
+        console.log(bars)
+        console.log(bars)
+        console.log(bars)
+
+
+
+
+      }
+      drawCanvas(topo3)
+      $(".btn").click(function () {
+
+        console.log($("#minyear").val())
+        console.log($("#maxyear").val())
+        console.log($("#minsize").val())
+        console.log($("#maxsize").val())
+        console.log($("#minoffice").val())
+        console.log($("#maxoffice").val())
+        ss = ""
+        var count = 0
+        var a = Array.from($(".contains").children()).map(d => d.textContent.trim())
+        var as = topo3.filter(item => {
+
+
+          return a.includes(item.production_countries)
+        })
+
+        var datas = topo3.filter(d => {
+          var condition1 = d.release_date >= $("#minyear").val() && d.release_date <= $("#maxyear").val()
+          var condition2 = d.Total >= $("#minsize").val() && d.Total <= $("#maxsize").val()
+          var condition3 = d.revenue_new >= $("#minoffice").val() && d.revenue_new <= $("#maxoffice").val()
+          var condition4 = a.includes(d.production_countries)
+          console.log(a)
+          if (a.length != 0) {
+            return condition1 && condition2 && condition3 && condition4
+
+          } else if (a.length == 0) {
+            return condition1 && condition2 && condition3
+          }
+
+
+        })
+
+
+        var data
+        if (datas.length == 0) {
+          data = topo3
+          console.log(data)
+          swal({
+            title: "Conditions Not Exists",
+            text: "Please enter other conditions",
+            timer: 1000,
+            buttons: false
+          });
+          drawCanvas(data)
+
+        } else if (datas.length != 0) {
+          swal({
+            title: "Succed",
+
+            timer: 1000,
+            buttons: false
+          });
+          data = datas
+          drawCanvas(data)
+        }
+
+
+      })
+
+    })
+
+
+
+  });
+</script>
